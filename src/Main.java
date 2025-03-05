@@ -10,7 +10,7 @@ public class Main {
         );
 
         System.out.println(String.format("%" + 16 + "s", Integer.toBinaryString(12)).replace(' ', '0'));
-        var cardState = new CardState(60000, 3);
+        var cardState = new CardState(65535, 3);
         var moves = cardState.getValidMoves();
         System.out.println(moves);
     }
