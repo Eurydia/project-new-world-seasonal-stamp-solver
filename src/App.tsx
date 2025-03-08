@@ -3,6 +3,7 @@ import {
   Container,
   CssBaseline,
   Grid2,
+  Stack,
   Typography,
 } from "@mui/material";
 import axios from "axios";
@@ -16,7 +17,13 @@ export const App = () => {
     }
     return initStates;
   });
-  const [result, setResult] = useState<string[]>([]);
+  const [result, setResult] = useState<
+    {
+      stateId: number;
+      lastPos: number;
+      moves: number;
+    }[]
+  >([]);
   const [tries, setTries] = useState(3);
 
   const handleSubmit = async () => {
@@ -32,12 +39,16 @@ export const App = () => {
       }
     );
     if (respond.status !== 200) {
+      setResult([]);
       return;
     }
+    console.debug(respond.data.history);
     setResult(
-      (respond.data as { history: number[] }).history.map(
-        (past) => past.toString(2).padStart(16, "0")
-      )
+      respond.data.history as {
+        stateId: number;
+        lastPos: number;
+        moves: number;
+      }[]
     );
   };
 
@@ -94,36 +105,49 @@ export const App = () => {
             );
           })}
         </Grid2>
-        {result.map((r, index) => (
-          <Grid2
+        {result.map((state, index) => (
+          <Stack
             key={"step" + index}
-            sx={{
-              aspectRatio: "1/1",
-              padding: 4,
-              maxWidth: 200,
-            }}
-            container
-            columns={4}
+            width="100%"
           >
-            {r.split("").map((state, indexR) => {
-              return (
-                <Grid2
-                  size={1}
-                  key={"k" + indexR.toString()}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    aspectRatio: "1/1",
-                    backgroundColor:
-                      state === "1"
-                        ? "primary.dark"
-                        : "primary.light",
-                  }}
-                />
-              );
-            })}
-          </Grid2>
+            <Typography>Moves: {state.moves}</Typography>
+            <Grid2
+              sx={{
+                aspectRatio: "1/1",
+                padding: 4,
+                maxWidth: 200,
+              }}
+              container
+              columns={4}
+            >
+              {state.stateId
+                .toString(2)
+                .padStart(16, "0")
+                .split("")
+                .map((cell, indexR) => {
+                  let backgroundColor = "primary.dark";
+                  if (cell === "1") {
+                    backgroundColor = "primary.light";
+                  }
+                  if (indexR === state.lastPos) {
+                    backgroundColor = "secondary.light";
+                  }
+                  return (
+                    <Grid2
+                      size={1}
+                      key={"k" + indexR.toString()}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        aspectRatio: "1/1",
+                        backgroundColor,
+                      }}
+                    />
+                  );
+                })}
+            </Grid2>
+          </Stack>
         ))}
       </Container>
     </Fragment>

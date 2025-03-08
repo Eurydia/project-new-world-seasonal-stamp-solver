@@ -25,13 +25,6 @@ public class Server {
 
     public static void main(String[] args) {
         SpringApplication.run(Server.class, args);
-//        var cardState = new CardState(List.of(
-//                0, 0, 1, 0,
-//                0, 0, 0, 0,
-//                1, 1, 1, 0,
-//                0, 0, 0, 0
-//
-//        ), 3);
     }
     @RequestMapping(value =  "/", method =  RequestMethod.GET)
     public @ResponseBody CardState getSolution(@RequestParam("state")  int  stateId, @RequestParam("moves") int moves) {

@@ -12,7 +12,7 @@ public class CardState {
     private static final Logger log = LogManager.getLogger(CardState.class);
     private final int movesLeft;
     private final List<Boolean> states;
-    private final List<Integer> history;
+    private final List<CardStateHistory> history;
 
     public CardState(List<Integer> states, int movesLeft) {
         if (movesLeft > 3 || movesLeft < 0) {
@@ -30,10 +30,10 @@ public class CardState {
             }
             this.states.add(state == 1);
         }
-        history = new ArrayList<>(List.of(getStateId()));
+        history = new ArrayList<>();
     }
 
-    private CardState(List<Boolean> states, int movesLeft, List<Integer> history) {
+    private CardState(List<Boolean> states, int movesLeft, List<CardStateHistory> history, int lastestMove) {
         if (movesLeft > 3 || movesLeft < 0) {
             throw new IllegalArgumentException();
         }
@@ -44,7 +44,7 @@ public class CardState {
         this.movesLeft = movesLeft;
         this.states = new ArrayList<>(states);
         this.history = new ArrayList<>(history);
-        this.history.add(getStateId());
+        this.history.add(new CardStateHistory(getStateId(), movesLeft,lastestMove));
     }
 
     private static int posToRow(int pos) {
@@ -93,7 +93,7 @@ public class CardState {
         return true;
     }
 
-    public List<Integer> getHistory() {
+    public List<CardStateHistory> getHistory() {
         return new ArrayList<>(history);
     }
 
@@ -146,8 +146,7 @@ public class CardState {
         }
 
         nextMoveCount = Math.min(nextMoveCount, 3);
-        log.info(String.format("stateId=%d, moves=%d", getStateId(), movesLeft));
-        return new CardState(nextStates, nextMoveCount, history);
+        return new CardState(nextStates, nextMoveCount, history, pos);
 
     }
 
