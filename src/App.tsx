@@ -5,116 +5,53 @@ import {
   Grid2,
   Typography,
 } from "@mui/material";
-import { Fragment, useEffect, useState } from "react";
-
-const isRowComplete = (pos: number, states: boolean[]) => {
-  const row = Math.floor(pos / 4) * 4;
-
-  for (let i = row; i < row + 4; i++) {
-    if (!states[i]) {
-      return false;
-    }
-  }
-  return true;
-};
-
-const isColComplete = (pos: number, states: boolean[]) => {
-  const col = pos % 4;
-  for (let i = col; i < 13 + col; i += 4) {
-    if (!states[i]) {
-      return false;
-    }
-  }
-  return true;
-};
-
-const isDiagFiveComplete = (
-  pos: number,
-  states: boolean[]
-) => {
-  if (pos % 5 !== 0) {
-    return false;
-  }
-
-  for (let i = 0; i < 16; i += 5) {
-    if (!states[i]) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-const isDiagThreeComplete = (
-  pos: number,
-  states: boolean[]
-) => {
-  if (pos % 3 !== 0) {
-    return false;
-  }
-
-  for (let i = 3; i < 13; i += 3) {
-    if (!states[i]) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-const randIntCollect = (count: number) => {
-  const nums = new Set<number>();
-
-  if (count <= 0 || count > 16) {
-    return nums;
-  }
-
-  while (nums.size < count) {
-    nums.add(Math.floor(Math.random() * 16));
-  }
-  return nums;
-};
-
-const restart = () => {
-  const initStates = Array<boolean>(16);
-  initStates.fill(false);
-  const randNums = randIntCollect(6);
-  return initStates.map((_, index) => randNums.has(index));
-};
+import axios from "axios";
+import { Fragment, useState } from "react";
 
 export const App = () => {
-  const [states, setStates] = useState(restart);
+  const [states, setStates] = useState(() => {
+    const initStates: boolean[] = [];
+    for (let i = 0; i < 16; i++) {
+      initStates.push(false);
+    }
+    return initStates;
+  });
+  const [result, setResult] = useState<string[]>([]);
   const [tries, setTries] = useState(3);
-  const [lastChanged, setLastChanged] = useState<
-    number | null
-  >(null);
 
-  useEffect(() => {
-    if (lastChanged === null) {
+  const handleSubmit = async () => {
+    const stateIdBinary = states
+      .map((state) => (state ? "1" : "0"))
+      .join("");
+    const stateId = Number.parseInt(stateIdBinary, 2);
+    console.debug(stateId);
+    const respond = await axios(
+      `http://localhost:8080/?state=${stateId}&moves=${tries}`,
+      {
+        proxy: false,
+      }
+    );
+    if (respond.status !== 200) {
       return;
     }
-    setTries((prev) => {
-      let next = prev;
-      if (isColComplete(lastChanged, states)) {
-        next++;
-      }
-      if (isRowComplete(lastChanged, states)) {
-        next++;
-      }
-      if (isDiagFiveComplete(lastChanged, states)) {
-        next++;
-      }
-      if (isDiagThreeComplete(lastChanged, states)) {
-        next++;
-      }
-      return Math.min(next, 3);
-    });
-  }, [states, lastChanged]);
+    setResult(
+      (respond.data as { history: number[] }).history.map(
+        (past) => past.toString(2).padStart(16, "0")
+      )
+    );
+  };
 
   return (
     <Fragment>
       <CssBaseline />
       <Container maxWidth="lg">
+        <Button
+          disableElevation
+          onClick={handleSubmit}
+          variant="contained"
+        >
+          Submit
+        </Button>
         <Typography>Tries: {tries}</Typography>
         <Grid2
           maxHeight="80vh"
@@ -149,8 +86,6 @@ export const App = () => {
 
                       return next;
                     });
-                    setTries((prev) => prev - 1);
-                    setLastChanged(index);
                   }}
                 >
                   {/* {index} */}
@@ -159,6 +94,37 @@ export const App = () => {
             );
           })}
         </Grid2>
+        {result.map((r, index) => (
+          <Grid2
+            key={"step" + index}
+            sx={{
+              aspectRatio: "1/1",
+              padding: 4,
+              maxWidth: 200,
+            }}
+            container
+            columns={4}
+          >
+            {r.split("").map((state, indexR) => {
+              return (
+                <Grid2
+                  size={1}
+                  key={"k" + indexR.toString()}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    aspectRatio: "1/1",
+                    backgroundColor:
+                      state === "1"
+                        ? "primary.dark"
+                        : "primary.light",
+                  }}
+                />
+              );
+            })}
+          </Grid2>
+        ))}
       </Container>
     </Fragment>
   );
