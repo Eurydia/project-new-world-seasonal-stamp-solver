@@ -24,7 +24,7 @@ export const App = () => {
       moves: number;
     }[]
   >([]);
-  const [tries, setTries] = useState(3);
+  const [tries, _] = useState(3);
 
   const handleSubmit = async () => {
     const stateIdBinary = states
