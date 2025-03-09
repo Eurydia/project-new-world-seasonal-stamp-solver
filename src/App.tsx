@@ -1,13 +1,23 @@
+import { ThemeProvider } from "@emotion/react";
+import { CheckRounded } from "@mui/icons-material";
 import {
+  alpha,
   Button,
   Container,
+  createTheme,
   CssBaseline,
   Grid2,
   Stack,
+  TextField,
+  Toolbar,
   Typography,
 } from "@mui/material";
 import axios from "axios";
-import { Fragment, useState } from "react";
+import { useState } from "react";
+
+const theme = createTheme({
+  palette: { contrastThreshold: 3 },
+});
 
 export const App = () => {
   const [states, setStates] = useState(() => {
@@ -24,7 +34,7 @@ export const App = () => {
       moves: number;
     }[]
   >([]);
-  const [tries, _] = useState(3);
+  const [tries, setTries] = useState("3");
 
   const handleSubmit = async () => {
     const stateIdBinary = states
@@ -42,7 +52,14 @@ export const App = () => {
       setResult([]);
       return;
     }
-    console.debug(respond.data.history);
+    if (
+      respond.data === undefined ||
+      respond.data.history === undefined
+    ) {
+      setResult([]);
+      return;
+    }
+
     setResult(
       respond.data.history as {
         stateId: number;
@@ -53,104 +70,136 @@ export const App = () => {
   };
 
   return (
-    <Fragment>
+    <ThemeProvider theme={theme}>
       <CssBaseline />
       <Container maxWidth="lg">
-        <Button
-          disableElevation
-          onClick={handleSubmit}
-          variant="contained"
-        >
-          Submit
-        </Button>
-        <Typography>Tries: {tries}</Typography>
-        <Grid2
-          maxHeight="80vh"
-          sx={{ aspectRatio: "1/1", padding: 4 }}
-          container
-          columns={4}
-        >
-          {states.map((state, index) => {
-            return (
-              <Grid2
-                size={1}
-                key={"k" + index.toString()}
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  aspectRatio: "1/1",
-                }}
-              >
-                <Button
-                  disableRipple
-                  disabled={state || tries === 0}
-                  disableElevation
-                  sx={{ height: "100%" }}
-                  fullWidth
-                  variant="contained"
-                  color="success"
-                  onClick={() => {
-                    setStates((prev) => {
-                      const next = [...prev];
-                      next[index] = true;
-
-                      return next;
-                    });
+        <Stack spacing={2}>
+          <TextField
+            type="number"
+            inputMode="numeric"
+            slotProps={{
+              htmlInput: {
+                max: 3,
+                min: 0,
+              },
+            }}
+            value={tries}
+            onChange={(e) => setTries(e.target.value)}
+          />
+          <Toolbar disableGutters>
+            <Button
+              disableElevation
+              onClick={handleSubmit}
+              variant="contained"
+            >
+              Submit
+            </Button>
+          </Toolbar>
+          <Grid2
+            maxHeight={500}
+            maxWidth={500}
+            sx={{ aspectRatio: "1/1" }}
+            container
+            columns={4}
+          >
+            {states.map((state, index) => {
+              return (
+                <Grid2
+                  size={1}
+                  key={"k" + index.toString()}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    aspectRatio: "1/1",
                   }}
                 >
-                  {/* {index} */}
-                </Button>
-              </Grid2>
-            );
-          })}
-        </Grid2>
-        {result.map((state, index) => (
-          <Stack
-            key={"step" + index}
-            width="100%"
-          >
-            <Typography>Moves: {state.moves}</Typography>
+                  <Button
+                    disableRipple
+                    disableElevation
+                    sx={{
+                      height: "100%",
+                      backgroundColor: state
+                        ? "primary.light"
+                        : "primary.main",
+                    }}
+                    fullWidth
+                    variant="contained"
+                    onClick={() => {
+                      setStates((prev) => {
+                        const next = [...prev];
+                        next[index] = !prev[index];
+                        return next;
+                      });
+                    }}
+                  >
+                    {state && <CheckRounded />}
+                  </Button>
+                </Grid2>
+              );
+            })}
+          </Grid2>
+          {result.length > 0 && (
             <Grid2
               sx={{
                 aspectRatio: "1/1",
-                padding: 4,
-                maxWidth: 200,
+                maxHeight: 500,
+                maxWidth: 500,
+                borderStyle: "solid",
+                borderWidth: 8,
+                borderColor: "primary.dark",
               }}
               container
               columns={4}
             >
-              {state.stateId
-                .toString(2)
-                .padStart(16, "0")
-                .split("")
-                .map((cell, indexR) => {
-                  let backgroundColor = "primary.dark";
-                  if (cell === "1") {
-                    backgroundColor = "primary.light";
+              {Array(16)
+                .fill(0)
+                .map((_, index) => {
+                  let order = "";
+                  for (const [
+                    itemIndex,
+                    item,
+                  ] of result.entries()) {
+                    if (item.lastPos === index) {
+                      order = (itemIndex + 1).toString();
+                      break;
+                    }
                   }
-                  if (indexR === state.lastPos) {
-                    backgroundColor = "secondary.light";
-                  }
+                  const bgAlpha =
+                    order !== ""
+                      ? (100 / result.length / 100) *
+                        Number.parseInt(order)
+                      : 0;
+                  const bgColor = alpha(
+                    theme.palette.primary.main,
+                    bgAlpha
+                  );
                   return (
                     <Grid2
                       size={1}
-                      key={"k" + indexR.toString()}
+                      key={"k" + index.toString()}
                       sx={{
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
                         aspectRatio: "1/1",
-                        backgroundColor,
+                        backgroundColor: bgColor,
                       }}
-                    />
+                    >
+                      <Typography
+                        fontWeight={700}
+                        variant="h5"
+                      >
+                        {order}
+                      </Typography>
+                    </Grid2>
                   );
                 })}
             </Grid2>
-          </Stack>
-        ))}
+          )}
+        </Stack>
       </Container>
-    </Fragment>
+    </ThemeProvider>
   );
 };
 

@@ -15,7 +15,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8081:80"
+    - "8081:80"
     restart: unless-stopped
     networks:
       - app-network
