@@ -1,5 +1,10 @@
 import { ThemeProvider } from "@emotion/react";
-import { CheckRounded } from "@mui/icons-material";
+import {
+  AnimationRounded,
+  CheckRounded,
+  HistoryRounded,
+  SendRounded,
+} from "@mui/icons-material";
 import {
   Button,
   Container,
@@ -111,13 +116,42 @@ export const App = () => {
             value={tries}
             onChange={(e) => setTries(e.target.value)}
           />
-          <Toolbar disableGutters>
+          <Toolbar
+            disableGutters
+            sx={{ gap: 1 }}
+          >
             <Button
+              disableRipple
               disableElevation
               onClick={handleSubmit}
               variant="contained"
+              startIcon={<SendRounded />}
             >
-              Submit
+              Solve
+            </Button>
+            <Button
+              disableElevation
+              disableRipple
+              startIcon={<HistoryRounded />}
+              variant="outlined"
+              onClick={() => {
+                setStates(() => {
+                  const next = Array(16);
+                  next.fill(false);
+                  return next;
+                });
+              }}
+            >
+              Reset
+            </Button>
+            <Button
+              disableElevation
+              disableRipple
+              variant="outlined"
+              onClick={replayAnimation}
+              startIcon={<AnimationRounded />}
+            >
+              replay
             </Button>
           </Toolbar>
 
