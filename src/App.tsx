@@ -1,7 +1,6 @@
 import { ThemeProvider } from "@emotion/react";
 import { CheckRounded } from "@mui/icons-material";
 import {
-  alpha,
   Button,
   Container,
   createTheme,
@@ -13,7 +12,8 @@ import {
   Typography,
 } from "@mui/material";
 import axios from "axios";
-import { useState } from "react";
+import { motion, useAnimation } from "motion/react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CardState,
   CardStateHistory,
@@ -37,7 +37,6 @@ export const App = () => {
     string
   > | null>(null);
   const [tries, setTries] = useState("3");
-
   const handleSubmit = async () => {
     const stateIdBinary = states
       .map((state) => (state ? "1" : "0"))
@@ -70,6 +69,30 @@ export const App = () => {
       data: (respond.data as CardState).history,
     });
   };
+
+  const animationControl = useAnimation();
+
+  const replayAnimation = useCallback(async () => {
+    await animationControl.start({
+      y: -50,
+      opacity: 0,
+      transition: { delay: 0 },
+    });
+    animationControl.start({
+      y: 0,
+      opacity: 1,
+    });
+  }, [animationControl]);
+
+  useEffect(() => {
+    if (result === null) {
+      return;
+    }
+    if (!result.ok) {
+      return;
+    }
+    replayAnimation();
+  }, [result, replayAnimation]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -178,36 +201,45 @@ export const App = () => {
                             break;
                           }
                         }
-                        const bgAlpha =
-                          order !== ""
-                            ? 0.5 +
-                              (50 /
-                                result.data.length /
-                                100) *
-                                Number.parseInt(order)
-                            : 0;
-                        const bgColor = alpha(
-                          theme.palette.primary.main,
-                          bgAlpha
-                        );
                         return (
                           <Grid2
+                            key={"output-item" + index}
                             size={1}
-                            key={"k" + index.toString()}
-                            sx={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              aspectRatio: "1/1",
-                              backgroundColor: bgColor,
-                            }}
                           >
-                            <Typography
-                              fontWeight={700}
-                              variant="h5"
+                            <motion.div
+                              animate={animationControl}
+                              transition={{
+                                delay:
+                                  order === ""
+                                    ? 0
+                                    : Number.parseInt(
+                                        order
+                                      ) * 0.1,
+                              }}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                backgroundColor:
+                                  order === ""
+                                    ? theme.palette.primary
+                                        .light
+                                    : theme.palette.primary
+                                        .main,
+                              }}
                             >
-                              {order}
-                            </Typography>
+                              <Typography
+                                fontFamily="monospace"
+                                fontWeight={900}
+                                color={theme.palette.getContrastText(
+                                  theme.palette.primary.main
+                                )}
+                              >
+                                {order}
+                              </Typography>
+                            </motion.div>
                           </Grid2>
                         );
                       })}
