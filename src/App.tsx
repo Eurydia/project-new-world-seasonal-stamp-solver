@@ -14,6 +14,11 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { useState } from "react";
+import {
+  CardState,
+  CardStateHistory,
+  Result,
+} from "./types";
 
 const theme = createTheme({
   palette: { contrastThreshold: 3 },
@@ -27,13 +32,10 @@ export const App = () => {
     }
     return initStates;
   });
-  const [result, setResult] = useState<
-    {
-      stateId: number;
-      lastPos: number;
-      moves: number;
-    }[]
-  >([]);
+  const [result, setResult] = useState<Result<
+    CardStateHistory[],
+    string
+  > | null>(null);
   const [tries, setTries] = useState("3");
 
   const handleSubmit = async () => {
@@ -41,32 +43,32 @@ export const App = () => {
       .map((state) => (state ? "1" : "0"))
       .join("");
     const stateId = Number.parseInt(stateIdBinary, 2);
-    console.debug(stateId);
     const respond = await axios(
       `http://localhost:8080/?state=${stateId}&moves=${tries}`,
       {
         proxy: false,
       }
     );
+
     if (respond.status !== 200) {
-      setResult([]);
+      setResult({ ok: false, other: respond.statusText });
       return;
     }
     if (
       respond.data === undefined ||
       respond.data.history === undefined
     ) {
-      setResult([]);
+      setResult({
+        ok: false,
+        other: "Bad response structure",
+      });
       return;
     }
 
-    setResult(
-      respond.data.history as {
-        stateId: number;
-        lastPos: number;
-        moves: number;
-      }[]
-    );
+    setResult({
+      ok: true,
+      data: (respond.data as CardState).history,
+    });
   };
 
   return (
@@ -95,85 +97,19 @@ export const App = () => {
               Submit
             </Button>
           </Toolbar>
+
           <Grid2
-            maxHeight={500}
-            maxWidth={500}
-            sx={{ aspectRatio: "1/1" }}
+            spacing={2}
             container
-            columns={4}
+            columns={2}
           >
-            {states.map((state, index) => {
-              return (
-                <Grid2
-                  size={1}
-                  key={"k" + index.toString()}
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    aspectRatio: "1/1",
-                  }}
-                >
-                  <Button
-                    disableRipple
-                    disableElevation
-                    sx={{
-                      height: "100%",
-                      backgroundColor: state
-                        ? "primary.light"
-                        : "primary.main",
-                    }}
-                    fullWidth
-                    variant="contained"
-                    onClick={() => {
-                      setStates((prev) => {
-                        const next = [...prev];
-                        next[index] = !prev[index];
-                        return next;
-                      });
-                    }}
-                  >
-                    {state && <CheckRounded />}
-                  </Button>
-                </Grid2>
-              );
-            })}
-          </Grid2>
-          {result.length > 0 && (
-            <Grid2
-              sx={{
-                aspectRatio: "1/1",
-                maxHeight: 500,
-                maxWidth: 500,
-                borderStyle: "solid",
-                borderWidth: 8,
-                borderColor: "primary.dark",
-              }}
-              container
-              columns={4}
-            >
-              {Array(16)
-                .fill(0)
-                .map((_, index) => {
-                  let order = "";
-                  for (const [
-                    itemIndex,
-                    item,
-                  ] of result.entries()) {
-                    if (item.lastPos === index) {
-                      order = (itemIndex + 1).toString();
-                      break;
-                    }
-                  }
-                  const bgAlpha =
-                    order !== ""
-                      ? (100 / result.length / 100) *
-                        Number.parseInt(order)
-                      : 0;
-                  const bgColor = alpha(
-                    theme.palette.primary.main,
-                    bgAlpha
-                  );
+            <Grid2 size={{ xs: 2, md: 1 }}>
+              <Grid2
+                sx={{ aspectRatio: "1/1" }}
+                container
+                columns={4}
+              >
+                {states.map((state, index) => {
                   return (
                     <Grid2
                       size={1}
@@ -183,23 +119,104 @@ export const App = () => {
                         justifyContent: "center",
                         alignItems: "center",
                         aspectRatio: "1/1",
-                        backgroundColor: bgColor,
                       }}
                     >
-                      <Typography
-                        fontWeight={700}
-                        variant="h5"
+                      <Button
+                        disableRipple
+                        disableElevation
+                        sx={{
+                          height: "100%",
+                          backgroundColor: state
+                            ? "primary.light"
+                            : "primary.main",
+                        }}
+                        fullWidth
+                        variant="contained"
+                        onClick={() => {
+                          setStates((prev) => {
+                            const next = [...prev];
+                            next[index] = !prev[index];
+                            return next;
+                          });
+                        }}
                       >
-                        {order}
-                      </Typography>
+                        {state && <CheckRounded />}
+                      </Button>
                     </Grid2>
                   );
                 })}
+              </Grid2>
             </Grid2>
-          )}
+            <Grid2 size={{ xs: 2, md: 1 }}>
+              {result !== null && !result.ok && (
+                <Typography color="error">
+                  {result.other}
+                </Typography>
+              )}
+              {result !== null &&
+                result.ok &&
+                result.data.length > 0 && (
+                  <Grid2
+                    sx={{
+                      aspectRatio: "1/1",
+                    }}
+                    container
+                    columns={4}
+                  >
+                    {Array(16)
+                      .fill(0)
+                      .map((_, index) => {
+                        let order = "";
+                        for (const [
+                          itemIndex,
+                          item,
+                        ] of result.data.entries()) {
+                          if (item.lastPos === index) {
+                            order = (
+                              itemIndex + 1
+                            ).toString();
+                            break;
+                          }
+                        }
+                        const bgAlpha =
+                          order !== ""
+                            ? 0.5 +
+                              (50 /
+                                result.data.length /
+                                100) *
+                                Number.parseInt(order)
+                            : 0;
+                        const bgColor = alpha(
+                          theme.palette.primary.main,
+                          bgAlpha
+                        );
+                        return (
+                          <Grid2
+                            size={1}
+                            key={"k" + index.toString()}
+                            sx={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              aspectRatio: "1/1",
+                              backgroundColor: bgColor,
+                            }}
+                          >
+                            <Typography
+                              fontWeight={700}
+                              variant="h5"
+                            >
+                              {order}
+                            </Typography>
+                          </Grid2>
+                        );
+                      })}
+                  </Grid2>
+                )}
+            </Grid2>
+          </Grid2>
         </Stack>
       </Container>
     </ThemeProvider>
   );
 };
-
