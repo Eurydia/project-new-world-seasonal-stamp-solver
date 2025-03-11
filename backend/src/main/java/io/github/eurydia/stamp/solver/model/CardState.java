@@ -33,6 +33,23 @@ public class CardState {
         history = new ArrayList<>();
     }
 
+    public CardState(int stateId, int movesLeft) {
+        if (stateId < 0 || stateId > LAST_STATE) {
+            throw new IllegalArgumentException();
+        }
+        if (movesLeft < 0 || movesLeft > 3) {
+            throw  new IllegalArgumentException();
+        }
+
+        states = new ArrayList<>();
+        String stateIdBinary = String.format("%16s", Integer.toBinaryString(stateId)).replace(' ','0' );
+        for (int i =0; i <16; i ++) {
+            states.add(stateIdBinary.charAt(i) == '1');
+        }
+        this.movesLeft =  movesLeft;
+        history = new ArrayList<>();
+    }
+
     private CardState(List<Boolean> states, int movesLeft, List<CardStateHistory> history, int lastestMove) {
         if (movesLeft > 3 || movesLeft < 0) {
             throw new IllegalArgumentException();
