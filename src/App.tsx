@@ -41,18 +41,35 @@ export const App = () => {
     CardStateHistory[],
     string
   > | null>(null);
-  const [tries, setTries] = useState("3");
+  const [moves, setMoves] = useState(3);
   const handleSubmit = async () => {
     const stateIdBinary = states
       .map((state) => (state ? "1" : "0"))
       .join("");
     const stateId = Number.parseInt(stateIdBinary, 2);
-    const respond = await axios(
-      `http://localhost:8080/?state=${stateId}&moves=${tries}`,
-      {
-        proxy: false,
-      }
-    );
+
+    if (
+      moves < 0 ||
+      moves > 3 ||
+      stateId < 0 ||
+      stateId > 65535
+    ) {
+      setResult({
+        ok: false,
+        other: "Invalid data provided",
+      });
+      return;
+    }
+
+    const respond = await axios(`http://localhost:8080/`, {
+      proxy: false,
+      params: {
+        state: stateId,
+        moves,
+      },
+      timeout: 10000,
+      method: "get",
+    });
 
     if (respond.status !== 200) {
       setResult({ ok: false, other: respond.statusText });
@@ -79,13 +96,13 @@ export const App = () => {
 
   const replayAnimation = useCallback(async () => {
     await animationControl.start({
-      y: -50,
+      scale: 0.7,
       opacity: 0,
       transition: { delay: 0 },
     });
     animationControl.start({
-      y: 0,
       opacity: 1,
+      scale: 1,
     });
   }, [animationControl]);
 
@@ -113,8 +130,12 @@ export const App = () => {
                 min: 0,
               },
             }}
-            value={tries}
-            onChange={(e) => setTries(e.target.value)}
+            value={moves}
+            onChange={(e) => {
+              let value = Number.parseInt(e.target.value);
+              value = Number.isNaN(value) ? 0 : value;
+              setMoves(Math.min(3, Math.max(0, value)));
+            }}
           />
           <Toolbar
             disableGutters
@@ -147,6 +168,7 @@ export const App = () => {
             <Button
               disableElevation
               disableRipple
+              disabled={result === null || !result.ok}
               variant="outlined"
               onClick={replayAnimation}
               startIcon={<AnimationRounded />}
@@ -248,7 +270,7 @@ export const App = () => {
                                     ? 0
                                     : Number.parseInt(
                                         order
-                                      ) * 0.1,
+                                      ) * 0.3,
                               }}
                               style={{
                                 width: "100%",
@@ -258,8 +280,7 @@ export const App = () => {
                                 justifyContent: "center",
                                 backgroundColor:
                                   order === ""
-                                    ? theme.palette.primary
-                                        .light
+                                    ? undefined
                                     : theme.palette.primary
                                         .main,
                               }}
