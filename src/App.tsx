@@ -41,18 +41,35 @@ export const App = () => {
     CardStateHistory[],
     string
   > | null>(null);
-  const [tries, setTries] = useState("3");
+  const [moves, setMoves] = useState(3);
   const handleSubmit = async () => {
     const stateIdBinary = states
       .map((state) => (state ? "1" : "0"))
       .join("");
     const stateId = Number.parseInt(stateIdBinary, 2);
-    const respond = await axios(
-      `http://localhost:8080/?state=${stateId}&moves=${tries}`,
-      {
-        proxy: false,
-      }
-    );
+
+    if (
+      moves < 0 ||
+      moves > 3 ||
+      stateId < 0 ||
+      stateId > 65535
+    ) {
+      setResult({
+        ok: false,
+        other: "Invalid data provided",
+      });
+      return;
+    }
+
+    const respond = await axios(`http://localhost:8080/`, {
+      proxy: false,
+      params: {
+        state: stateId,
+        moves,
+      },
+      timeout: 10000,
+      method: "get",
+    });
 
     if (respond.status !== 200) {
       setResult({ ok: false, other: respond.statusText });
@@ -113,8 +130,12 @@ export const App = () => {
                 min: 0,
               },
             }}
-            value={tries}
-            onChange={(e) => setTries(e.target.value)}
+            value={moves}
+            onChange={(e) => {
+              let value = Number.parseInt(e.target.value);
+              value = Number.isNaN(value) ? 0 : value;
+              setMoves(Math.min(3, Math.max(0, value)));
+            }}
           />
           <Toolbar
             disableGutters
