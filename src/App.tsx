@@ -96,13 +96,13 @@ export const App = () => {
 
   const replayAnimation = useCallback(async () => {
     await animationControl.start({
-      y: -50,
+      scale: 0.7,
       opacity: 0,
       transition: { delay: 0 },
     });
     animationControl.start({
-      y: 0,
       opacity: 1,
+      scale: 1,
     });
   }, [animationControl]);
 
@@ -168,6 +168,7 @@ export const App = () => {
             <Button
               disableElevation
               disableRipple
+              disabled={result === null || !result.ok}
               variant="outlined"
               onClick={replayAnimation}
               startIcon={<AnimationRounded />}
@@ -269,7 +270,7 @@ export const App = () => {
                                     ? 0
                                     : Number.parseInt(
                                         order
-                                      ) * 0.1,
+                                      ) * 0.3,
                               }}
                               style={{
                                 width: "100%",
@@ -279,8 +280,7 @@ export const App = () => {
                                 justifyContent: "center",
                                 backgroundColor:
                                   order === ""
-                                    ? theme.palette.primary
-                                        .light
+                                    ? undefined
                                     : theme.palette.primary
                                         .main,
                               }}
