@@ -7,6 +7,7 @@ import {
 } from "@mui/icons-material";
 import {
   Button,
+  CircularProgress,
   Container,
   createTheme,
   CssBaseline,
@@ -18,7 +19,7 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { motion, useAnimation } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   CardState,
   CardStateHistory,
@@ -37,6 +38,7 @@ export const App = () => {
     }
     return initStates;
   });
+  const [isBusy, setIsBusy] = useState(false);
   const [result, setResult] = useState<Result<
     CardStateHistory[],
     string
@@ -61,6 +63,7 @@ export const App = () => {
       return;
     }
 
+    setIsBusy(true);
     const respond = await axios(`http://localhost:8080/`, {
       proxy: false,
       params: {
@@ -69,6 +72,8 @@ export const App = () => {
       },
       timeout: 10000,
       method: "get",
+    }).finally(() => {
+      setIsBusy(false);
     });
 
     if (respond.status !== 200) {
@@ -105,16 +110,6 @@ export const App = () => {
       scale: 1,
     });
   }, [animationControl]);
-
-  useEffect(() => {
-    if (result === null) {
-      return;
-    }
-    if (!result.ok) {
-      return;
-    }
-    replayAnimation();
-  }, [result, replayAnimation]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -173,7 +168,7 @@ export const App = () => {
               onClick={replayAnimation}
               startIcon={<AnimationRounded />}
             >
-              replay
+              animate
             </Button>
           </Toolbar>
 
@@ -226,8 +221,19 @@ export const App = () => {
                 })}
               </Grid2>
             </Grid2>
-            <Grid2 size={{ xs: 2, md: 1 }}>
-              {result !== null && !result.ok && (
+            <Grid2
+              size={{ xs: 2, md: 1 }}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+              }}
+            >
+              {isBusy && (
+                <CircularProgress variant="indeterminate" />
+              )}
+              {!isBusy && result !== null && !result.ok && (
                 <Typography color="error">
                   {result.other}
                 </Typography>
@@ -238,6 +244,8 @@ export const App = () => {
                   <Grid2
                     sx={{
                       aspectRatio: "1/1",
+                      width: "100%",
+                      display: isBusy ? "none" : undefined,
                     }}
                     container
                     columns={4}
